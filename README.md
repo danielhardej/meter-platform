@@ -60,3 +60,26 @@ On Windows substitute `.venv/Scripts/python.exe` and `../node_modules/.bin/pyrig
 - [Architecture](docs/architecture.md)
 
 Use a fresh Copilot session after each branch switch. Instructions guide behaviour; they do not guarantee which tools the agent chooses. No licence file is included.
+
+## Language servers
+
+Install the servers locally with Node 22:
+
+```sh
+npm install -g typescript typescript-language-server
+npm install -g pyright
+```
+
+Alternatively, open this branch in the devcontainer. It supplies Node 22 and Python 3.12; postCreateCommand installs the npm dependencies, global language servers and Python test dependencies into jobs/.venv. The container image and feature names are public container coordinates, not internal service URLs.
+
+.github/lsp.json installs nothing: it tells Copilot CLI how to start servers already on PATH. The TypeScript server uses the single root tsconfig.json; the Python server's rootUri is jobs, where pyproject.toml enables strict checking.
+
+Start a fresh Copilot CLI session from the repo root and run:
+
+```text
+/lsp show
+/lsp test typescript
+/lsp test python
+```
+
+If configuration changes in an active session, run `/lsp reload` or restart the session. The test commands check that the servers start; use a symbol question and inspect the actual tool calls to verify navigation. VS Code's language services and Copilot CLI's configured servers are separate integrations.
