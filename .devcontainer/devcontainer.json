@@ -1,0 +1,10 @@
+{
+  "name": "meter-platform",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:1-22-bookworm",
+  "features": {
+    "ghcr.io/devcontainers/features/python:1": {
+      "version": "3.12"
+    }
+  },
+  "postCreateCommand": "npm ci && npm install -g typescript typescript-language-server pyright && python -m venv jobs/.venv && jobs/.venv/bin/python -m pip install pytest==8.4.2"
+}
