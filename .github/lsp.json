@@ -1,0 +1,18 @@
+{
+  "lspServers": {
+    "typescript": {
+      "command": "typescript-language-server",
+      "args": ["--stdio"],
+      "fileExtensions": {
+        ".ts": "typescript",
+        ".tsx": "typescriptreact"
+      }
+    },
+    "python": {
+      "command": "pyright-langserver",
+      "args": ["--stdio"],
+      "rootUri": "jobs",
+      "fileExtensions": { ".py": "python" }
+    }
+  }
+}
