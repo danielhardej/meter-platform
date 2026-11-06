@@ -1,0 +1,46 @@
+openapi: 3.0.3
+info:
+  title: Synthetic Meter API
+  version: 1.0.0
+servers:
+  - url: https://api.meter.example
+paths:
+  /readings/validate:
+    post:
+      operationId: validateReading
+      summary: Validate a reading using the separate upstream contract
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Reading'
+      responses:
+        '200':
+          description: Validation result
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [valid]
+                properties:
+                  valid:
+                    type: boolean
+components:
+  schemas:
+    Reading:
+      type: object
+      required: [nmi, kWh, readAt, quality]
+      properties:
+        nmi:
+          type: string
+          pattern: '^TEST[A-Z0-9]{6}$'
+        kWh:
+          type: number
+          minimum: 0
+        readAt:
+          type: string
+          format: date-time
+        quality:
+          type: string
+          enum: [A, E, S]

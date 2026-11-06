@@ -1,0 +1,4 @@
+[[jobs]]
+name = "export"
+schedule = "0 2 * * *"
+entrypoint = "meter_jobs.export_job:main"

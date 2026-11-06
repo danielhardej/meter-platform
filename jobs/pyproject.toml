@@ -1,0 +1,20 @@
+[project]
+name = "meter-jobs"
+version = "1.0.0"
+description = "Synthetic smart-meter batch jobs"
+requires-python = ">=3.12"
+dependencies = []
+
+[project.optional-dependencies]
+test = ["pytest==8.4.2"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.pyright]
+typeCheckingMode = "strict"
+pythonVersion = "3.12"
+include = ["meter_jobs", "tests"]
+venvPath = "."
+venv = ".venv"

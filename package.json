@@ -1,0 +1,29 @@
+{
+  "name": "meter-platform",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Ingests smart-meter reads and serves billing.",
+  "type": "module",
+  "engines": { "node": ">=22" },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest --exclude dist/**",
+    "lint": "eslint .",
+    "verify": "npm run lint && npm run build && npm test -- --run",
+    "demo:compare": "node scripts/compare-search.mjs",
+    "start": "node dist/services/readings/server.js"
+  },
+  "dependencies": {
+    "fastify": "5.6.2",
+    "zod": "4.1.12"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.39.1",
+    "@types/node": "22.19.1",
+    "eslint": "9.39.1",
+    "pyright": "1.1.407",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.46.3",
+    "vitest": "4.0.8"
+  }
+}
