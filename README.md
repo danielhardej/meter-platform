@@ -14,10 +14,35 @@ This teaching monorepo represents a fictional energy retailer. All data is synth
 
 ## Quick start
 
-Use Node 22 and Python 3.12. There are no npm workspaces: one strict root TypeScript program covers packages, services, web and generated code.
+Use Node 22 and Python 3.12. There are no npm workspaces. The server and existing integration helpers use the root TypeScript project; the React application has an isolated strict browser project under `web/ui`.
 
 ```sh
-npm ci && npm run build
+npm ci
+npm run dev
+```
+
+The development command starts the API at `http://127.0.0.1:3000` and the React workbench at `http://127.0.0.1:5173`. It watches both applications and proxies UI requests to the local API.
+
+For a production-style local build served from one address:
+
+```sh
+npm run build
+npm start
+```
+
+Open `http://127.0.0.1:3000`. The workbench has four views:
+
+- **Reading** submits one synthetic meter reading.
+- **Batch** edits and submits 1 to 100 readings as an all-or-nothing request.
+- **Quote** calculates an illustrative AUD tariff quote.
+- **Payment** demonstrates accepted, duplicate and conflicting payment behavior.
+
+All API state is in memory and resets when the server restarts. There is no `GET /readings` route or reading history view.
+
+## Checks
+
+```sh
+npm run build
 npm test -- --run
 npm run lint
 npm run verify
@@ -26,13 +51,27 @@ npm run demo:compare
 
 The verify command runs lint, build, then test. Tests use Fastify inject, in-memory stores and no real network or database. The comparison counts all tracked text occurrences, then unique TypeScript findReferences locations excluding definitions; imports and re-exports are references, not incoming calls.
 
-Run the local API with `npm start` after building. POST routes are `/readings`, `/readings/batch`, `/payments` and `/quotes`. The API binds to the loopback interface on port 3000. A synthetic reading payload is:
+## Direct API use
 
-```json
-{"nmi":"TEST000001","kWh":2.5,"readAt":"2026-11-02T10:00:00Z","quality":"A"}
+The UI calls the same four JSON endpoints available for direct use:
+
+| Method | Route | Example body | Successful response |
+| --- | --- | --- | --- |
+| POST | `/readings` | `{"nmi":"TEST000001","kWh":2.5,"readAt":"2026-11-02T10:00:00Z","quality":"A"}` | `201 {"status":"accepted"}` |
+| POST | `/readings/batch` | `{"readings":[{"nmi":"TEST000002","kWh":1.8,"readAt":"2026-11-02T10:00:00Z","quality":"A"}]}` | `201 {"accepted":1}` |
+| POST | `/quotes` | `{"kWh":2.5,"readAt":"2026-11-02T10:00:00Z"}` | `200 {"currency":"AUD","amount":0.8}` |
+| POST | `/payments` | `{"paymentId":"demo-payment-001","accountId":"demo-account-001","amountCents":500}` | `201 {"status":"accepted"}` |
+
+For example, submit a reading from PowerShell while the server is running:
+
+```powershell
+$reading = @{ nmi = "TEST000001"; kWh = 2.5; readAt = "2026-11-02T10:00:00Z"; quality = "A" }
+Invoke-RestMethod -Uri "http://127.0.0.1:3000/readings" -Method Post -ContentType "application/json" -Body ($reading | ConvertTo-Json)
 ```
 
-The web folder contains integration helpers, not a UI. Its generated MeterApiClient targets a separate synthetic upstream contract at `https://api.meter.example/readings/validate`; this is deliberately not a local API route. Tests do not contact it. Tariffs are illustrative AUD amounts using a UTC peak window of 07:00 inclusive to 22:00 exclusive, not a real retail tariff.
+Invalid requests return RFC 7807 problem details as `application/problem+json`. A repeated identical payment returns `200 {"status":"duplicate"}`; reusing its payment ID with different details returns `409`.
+
+The older `web/src` integration helper targets a separate synthetic upstream contract at `https://api.meter.example/readings/validate`; this is deliberately not a local API route. Tests do not contact it. Tariffs are illustrative AUD amounts using a UTC peak window of 07:00 inclusive to 22:00 exclusive, not a real retail tariff.
 
 ### Python jobs
 
