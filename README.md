@@ -14,10 +14,35 @@ This teaching monorepo represents a fictional energy retailer. All data is synth
 
 ## Quick start
 
-Use Node 22 and Python 3.12. There are no npm workspaces: one strict root TypeScript program covers packages, services, web and generated code.
+Use Node 22 and Python 3.12. There are no npm workspaces. The server and existing integration helpers use the root TypeScript project; the React application has an isolated strict browser project under `web/ui`.
 
 ```sh
-npm ci && npm run build
+npm ci
+npm run dev
+```
+
+The development command starts the API at `http://127.0.0.1:3000` and the React workbench at `http://127.0.0.1:5173`. It watches both applications and proxies UI requests to the local API.
+
+For a production-style local build served from one address:
+
+```sh
+npm run build
+npm start
+```
+
+Open `http://127.0.0.1:3000`. The workbench has four views:
+
+- **Reading** submits one synthetic meter reading.
+- **Batch** edits and submits 1 to 100 readings as an all-or-nothing request.
+- **Quote** calculates an illustrative AUD tariff quote.
+- **Payment** demonstrates accepted, duplicate and conflicting payment behavior.
+
+All API state is in memory and resets when the server restarts. There is no `GET /readings` route or reading history view.
+
+## Checks
+
+```sh
+npm run build
 npm test -- --run
 npm run lint
 npm run verify
@@ -25,6 +50,8 @@ npm run demo:compare
 ```
 
 The verify command runs lint, build, then test. Tests use Fastify inject, in-memory stores and no real network or database. The comparison counts all tracked text occurrences, then unique TypeScript findReferences locations excluding definitions; imports and re-exports are references, not incoming calls.
+
+## Direct API use
 
 Run the local API with `npm start` after building. It binds to `127.0.0.1:3000` and is an API, not a browser UI. The examples below use PowerShell and synthetic data. Run each request in a PowerShell terminal while the server is running:
 
@@ -88,7 +115,7 @@ The first submission responds with HTTP `201` and `{ "status": "accepted" }`. Re
 
 Invalid request shapes return RFC 7807 problem details with the `application/problem+json` content type. Reading validation failures return HTTP `422`; malformed payloads return HTTP `400`.
 
-The web folder contains integration helpers, not a UI. Its generated MeterApiClient targets a separate synthetic upstream contract at `https://api.meter.example/readings/validate`; this is deliberately not a local API route. Tests do not contact it. Tariffs are illustrative AUD amounts using a UTC peak window of 07:00 inclusive to 22:00 exclusive, not a real retail tariff.
+The older `web/src` integration helper targets a separate synthetic upstream contract at `https://api.meter.example/readings/validate`; this is deliberately not a local API route. Tests do not contact it. Tariffs are illustrative AUD amounts using a UTC peak window of 07:00 inclusive to 22:00 exclusive, not a real retail tariff.
 
 ### Python jobs
 
