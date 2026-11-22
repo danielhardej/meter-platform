@@ -15,3 +15,15 @@ export interface TariffRates {
   peakCentsPerKwh: number;
   offPeakCentsPerKwh: number;
 }
+
+export interface QuoteInput {
+  kWh: number;
+  exportedKWh: number;
+  readAt: string;
+}
+
+export interface QuoteBreakdown {
+  amount: number;
+  feedInCredit: number;
+  netAmount: number;
+}
