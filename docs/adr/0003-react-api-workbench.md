@@ -21,3 +21,5 @@ Pin all direct dependencies exactly. The interface uses synthetic examples, does
 The dependency set grows to include React, Vite, Fastify static serving, development process orchestration and browser test utilities. These packages must be reviewed and updated deliberately.
 
 The backend TypeScript build excludes `web/ui`; the UI has its own type-check and bundle steps. Existing API paths and problem responses remain unchanged. There is no reading history because the API has no GET endpoint and its stores remain in memory.
+
+ADR 0004 supersedes the no-history consequence by adding volatile, in-memory reading and payment-attempt list endpoints. The browser build and dependency decisions in this ADR remain unchanged.
