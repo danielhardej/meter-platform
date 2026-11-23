@@ -32,12 +32,12 @@ npm start
 
 Open `http://127.0.0.1:3000`. The workbench has four views:
 
-- **Reading** submits one synthetic meter reading.
+- **Reading** submits one synthetic meter reading and lists all accepted readings.
 - **Batch** edits and submits 1 to 100 readings as an all-or-nothing request.
 - **Quote** calculates an illustrative AUD tariff quote.
-- **Payment** demonstrates accepted, duplicate and conflicting payment behavior.
+- **Payment** demonstrates accepted, duplicate and conflicting payment behavior and lists every valid-shaped attempt.
 
-All API state is in memory and resets when the server restarts. There is no `GET /readings` route or reading history view.
+All API state is in memory and resets when the server restarts. The Reading and Payment tables load when their tab opens, refresh after a submission and can be refreshed manually. They do not poll or persist data in the browser.
 
 ## Checks
 
@@ -53,13 +53,15 @@ The verify command runs lint, build, then test. Tests use Fastify inject, in-mem
 
 ## Direct API use
 
-The UI calls the same four JSON endpoints available for direct use:
+The UI calls the same six JSON endpoints available for direct use:
 
 | Method | Route | Example body | Successful response |
 | --- | --- | --- | --- |
+| GET | `/readings` | — | `200 {"readings":[{"nmi":"TEST000001","kWh":2.5,"readAt":"2026-11-02T10:00:00Z","quality":"A"}]}` |
 | POST | `/readings` | `{"nmi":"TEST000001","kWh":2.5,"readAt":"2026-11-02T10:00:00Z","quality":"A"}` | `201 {"status":"accepted"}` |
 | POST | `/readings/batch` | `{"readings":[{"nmi":"TEST000002","kWh":1.8,"readAt":"2026-11-02T10:00:00Z","quality":"A"}]}` | `201 {"accepted":1}` |
 | POST | `/quotes` | `{"kWh":2.5,"readAt":"2026-11-02T10:00:00Z"}` | `200 {"currency":"AUD","amount":0.8}` |
+| GET | `/payments` | — | `200 {"attempts":[{"paymentId":"demo-payment-001","accountId":"demo-account-001","amountCents":500,"outcome":"accepted","submittedAt":"2026-11-02T12:00:00.000Z"}]}` |
 | POST | `/payments` | `{"paymentId":"demo-payment-001","accountId":"demo-account-001","amountCents":500}` | `201 {"status":"accepted"}` |
 
 For example, submit a reading from PowerShell while the server is running:
@@ -69,7 +71,7 @@ $reading = @{ nmi = "TEST000001"; kWh = 2.5; readAt = "2026-11-02T10:00:00Z"; qu
 Invoke-RestMethod -Uri "http://127.0.0.1:3000/readings" -Method Post -ContentType "application/json" -Body ($reading | ConvertTo-Json)
 ```
 
-Invalid requests return RFC 7807 problem details as `application/problem+json`. A repeated identical payment returns `200 {"status":"duplicate"}`; reusing its payment ID with different details returns `409`.
+Invalid requests return RFC 7807 problem details as `application/problem+json`. A repeated identical payment returns `200 {"status":"duplicate"}`; reusing its payment ID with different details returns `409`. The payment-attempt list records accepted, duplicate and conflicting valid-shaped submissions. Malformed payments are rejected before recording.
 
 The older `web/src` integration helper targets a separate synthetic upstream contract at `https://api.meter.example/readings/validate`; this is deliberately not a local API route. Tests do not contact it. Tariffs are illustrative AUD amounts using a UTC peak window of 07:00 inclusive to 22:00 exclusive, not a real retail tariff.
 
