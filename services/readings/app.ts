@@ -5,6 +5,7 @@ import { registerQuoteRoute } from '../billing/routes/quote.js';
 import type { Payment, PaymentLedger } from '../billing/src/handlePayment.js';
 import { sendProblem } from './problem.js';
 import { registerReadingRoute } from './routes/reading.js';
+import { registerReadingsListRoute } from './routes/readingsList.js';
 import { registerReadingsBatchRoute } from './routes/readingsBatch.js';
 import { ReadingStore } from './store.js';
 
@@ -23,6 +24,7 @@ export function buildApp(options: {
   });
   app.setNotFoundHandler((_request, reply) => sendProblem(reply, 404, 'Route not found'));
   registerReadingRoute(app, store, clock);
+  registerReadingsListRoute(app, store);
   registerReadingsBatchRoute(app, store, clock);
   registerPaymentRoute(app, options.ledger ?? new Map<string, Payment>());
   registerQuoteRoute(app);
