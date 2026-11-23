@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { FormEvent } from 'react';
-import { submitReading } from './api.js';
+import { fetchReadings, submitReading } from './api.js';
 import type { ReadingRequest } from './api.js';
 import { FormStatus } from './FormStatus.js';
-import { currentLocalDateTime, errorMessage, toIsoTimestamp } from './formUtils.js';
+import { currentLocalDateTime, errorMessage, formatDateTime, toIsoTimestamp } from './formUtils.js';
 
 interface ReadingFields {
   nmi: string;
@@ -16,10 +16,35 @@ function sampleReading(): ReadingFields {
   return { nmi: 'TEST000001', kWh: '2.5', readAt: currentLocalDateTime(), quality: 'A' };
 }
 
+const qualityLabels: Record<ReadingRequest['quality'], string> = {
+  A: 'Actual',
+  E: 'Estimated',
+  S: 'Substituted',
+};
+
 export function ReadingForm() {
   const [fields, setFields] = useState(sampleReading);
   const [pending, setPending] = useState(false);
   const [status, setStatus] = useState<{ kind: 'success' | 'error'; title: string; detail: string } | null>(null);
+  const [readings, setReadings] = useState<ReadingRequest[]>([]);
+  const [listPending, setListPending] = useState(true);
+  const [listError, setListError] = useState<string | null>(null);
+
+  async function loadReadings() {
+    setListPending(true);
+    setListError(null);
+    try {
+      setReadings(await fetchReadings());
+    } catch (error) {
+      setListError(errorMessage(error));
+    } finally {
+      setListPending(false);
+    }
+  }
+
+  useEffect(() => {
+    void loadReadings();
+  }, []);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -36,6 +61,7 @@ export function ReadingForm() {
     try {
       await submitReading({ nmi: fields.nmi, kWh, readAt, quality: fields.quality });
       setStatus({ kind: 'success', title: 'Reading accepted', detail: `${fields.kWh} kWh was accepted by the local API.` });
+      void loadReadings();
     } catch (error) {
       setStatus({ kind: 'error', title: 'Reading not accepted', detail: errorMessage(error) });
     } finally {
@@ -44,36 +70,73 @@ export function ReadingForm() {
   }
 
   return (
-    <form className="operation-form" onSubmit={(event) => void handleSubmit(event)} noValidate>
-      <div className="form-grid form-grid--two">
-        <label className="field">
-          <span>NMI</span>
-          <input value={fields.nmi} onChange={(event) => setFields({ ...fields, nmi: event.target.value.toUpperCase() })} maxLength={10} required />
-          <small>10 characters beginning with TEST</small>
-        </label>
-        <label className="field">
-          <span>Usage (kWh)</span>
-          <input type="number" min="0" step="0.01" value={fields.kWh} onChange={(event) => setFields({ ...fields, kWh: event.target.value })} required />
-        </label>
-        <label className="field">
-          <span>Read time</span>
-          <input type="datetime-local" value={fields.readAt} onChange={(event) => setFields({ ...fields, readAt: event.target.value })} required />
-          <small>Local time, sent to the API as UTC</small>
-        </label>
-        <label className="field">
-          <span>Quality</span>
-          <select value={fields.quality} onChange={(event) => setFields({ ...fields, quality: event.target.value as ReadingRequest['quality'] })}>
-            <option value="A">Actual</option>
-            <option value="E">Estimated</option>
-            <option value="S">Substituted</option>
-          </select>
-        </label>
-      </div>
-      <div className="form-actions">
-        <button className="button button--primary" type="submit" disabled={pending}>{pending ? 'Submitting...' : 'Submit reading'}</button>
-        <button className="button button--secondary" type="button" onClick={() => { setFields(sampleReading()); setStatus(null); }}>Reset sample</button>
-      </div>
-      {status && <FormStatus {...status} />}
-    </form>
+    <div className="operation-content">
+      <form className="operation-form" onSubmit={(event) => void handleSubmit(event)} noValidate>
+        <div className="form-grid form-grid--two">
+          <label className="field">
+            <span>NMI</span>
+            <input value={fields.nmi} onChange={(event) => setFields({ ...fields, nmi: event.target.value.toUpperCase() })} maxLength={10} required />
+            <small>10 characters beginning with TEST</small>
+          </label>
+          <label className="field">
+            <span>Usage (kWh)</span>
+            <input type="number" min="0" step="0.01" value={fields.kWh} onChange={(event) => setFields({ ...fields, kWh: event.target.value })} required />
+          </label>
+          <label className="field">
+            <span>Read time</span>
+            <input type="datetime-local" value={fields.readAt} onChange={(event) => setFields({ ...fields, readAt: event.target.value })} required />
+            <small>Local time, sent to the API as UTC</small>
+          </label>
+          <label className="field">
+            <span>Quality</span>
+            <select value={fields.quality} onChange={(event) => setFields({ ...fields, quality: event.target.value as ReadingRequest['quality'] })}>
+              <option value="A">Actual</option>
+              <option value="E">Estimated</option>
+              <option value="S">Substituted</option>
+            </select>
+          </label>
+        </div>
+        <div className="form-actions">
+          <button className="button button--primary" type="submit" disabled={pending}>{pending ? 'Submitting...' : 'Submit reading'}</button>
+          <button className="button button--secondary" type="button" onClick={() => { setFields(sampleReading()); setStatus(null); }}>Reset sample</button>
+        </div>
+        {status && <FormStatus {...status} />}
+      </form>
+
+      <section className="history-section" aria-labelledby="submitted-readings-title">
+        <div className="history-toolbar">
+          <div>
+            <p className="section-kicker">In-memory history</p>
+            <h3 id="submitted-readings-title">Submitted readings</h3>
+            <span>{readings.length} accepted</span>
+          </div>
+          <button className="button button--secondary button--small" type="button" onClick={() => void loadReadings()} disabled={listPending}>
+            {listPending ? 'Refreshing...' : 'Refresh'}
+          </button>
+        </div>
+        {listError && <FormStatus kind="error" title="Readings unavailable" detail={listError} />}
+        {!listError && listPending && readings.length === 0 && <p className="history-state" role="status">Loading submitted readings...</p>}
+        {!listError && !listPending && readings.length === 0 && <p className="history-state">No readings have been accepted yet.</p>}
+        {readings.length > 0 && (
+          <div className="table-wrap">
+            <table className="history-table" aria-label="Submitted readings">
+              <thead>
+                <tr><th>NMI</th><th>Usage</th><th>Read time</th><th>Quality</th></tr>
+              </thead>
+              <tbody>
+                {readings.map((reading, index) => (
+                  <tr key={`${reading.nmi}-${reading.readAt}-${index}`}>
+                    <td>{reading.nmi}</td>
+                    <td>{reading.kWh} kWh</td>
+                    <td>{formatDateTime(reading.readAt)}</td>
+                    <td>{qualityLabels[reading.quality]}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+    </div>
   );
 }
