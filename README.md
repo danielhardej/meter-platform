@@ -32,12 +32,12 @@ npm start
 
 Open `http://127.0.0.1:3000`. The workbench has four views:
 
-- **Reading** submits one synthetic meter reading.
+- **Reading** submits one synthetic meter reading and lists all accepted readings.
 - **Batch** edits and submits 1 to 100 readings as an all-or-nothing request.
 - **Quote** calculates an illustrative AUD tariff quote.
-- **Payment** demonstrates accepted, duplicate and conflicting payment behavior.
+- **Payment** demonstrates accepted, duplicate and conflicting payment behavior and lists every valid-shaped attempt.
 
-All API state is in memory and resets when the server restarts. There is no `GET /readings` route or reading history view.
+All API state is in memory and resets when the server restarts. The Reading and Payment tables load when their tab opens, refresh after a submission and can be refreshed manually. They do not poll or persist data in the browser.
 
 ## Checks
 
@@ -54,6 +54,8 @@ The verify command runs lint, build, then test. Tests use Fastify inject, in-mem
 ## Direct API use
 
 Run the local API with `npm start` after building. It binds to `127.0.0.1:3000` and is an API, not a browser UI. The examples below use PowerShell and synthetic data. Run each request in a PowerShell terminal while the server is running:
+
+The React workbench calls the same six JSON endpoints shown below.
 
 ```powershell
 $baseUrl = "http://127.0.0.1:3000"
@@ -75,6 +77,14 @@ Invoke-RestMethod -Uri "$baseUrl/readings" -Method Post -ContentType "applicatio
 
 The API responds with HTTP `201` and `{ "status": "accepted" }`.
 
+### List accepted readings
+
+Read accepted single and batch submissions newest-first from `GET /readings`:
+
+```powershell
+Invoke-RestMethod -Uri "$baseUrl/readings" -Method Get
+```
+
 ### Submit a batch of readings
 
 Send between 1 and 100 readings to `POST /readings/batch`:
@@ -93,14 +103,14 @@ The response is HTTP `201` with `{ "accepted": 2 }`. The batch is all-or-nothing
 
 ### Request a tariff quote
 
-Send usage and a timestamp to `POST /quotes`:
+Send usage, exported energy and a timestamp to `POST /quotes`:
 
 ```powershell
-$quote = @{ kWh = 2.5; readAt = "2026-11-02T10:00:00Z" }
+$quote = @{ kWh = 2.5; exportedKWh = 1; readAt = "2026-11-02T10:00:00Z" }
 Invoke-RestMethod -Uri "$baseUrl/quotes" -Method Post -ContentType "application/json" -Body ($quote | ConvertTo-Json)
 ```
 
-The response is `{ "currency": "AUD", "amount": 0.8 }` for this example. The illustrative tariff uses UTC peak rates from 07:00 inclusive to 22:00 exclusive; it is not a real retail tariff.
+The response is `{ "currency": "AUD", "amount": 0.8, "feedInCredit": 0.08, "netAmount": 0.72 }` for this example. The illustrative tariff uses UTC peak rates from 07:00 inclusive to 22:00 exclusive; it is not a real retail tariff.
 
 ### Submit a payment
 
@@ -112,6 +122,16 @@ Invoke-RestMethod -Uri "$baseUrl/payments" -Method Post -ContentType "applicatio
 ```
 
 The first submission responds with HTTP `201` and `{ "status": "accepted" }`. Repeating the same payment returns HTTP `200` and `{ "status": "duplicate" }`; reusing its payment ID with different details returns HTTP `409`.
+
+### List payment attempts
+
+Read accepted, duplicate and conflicting valid-shaped attempts newest-first from `GET /payments`:
+
+```powershell
+Invoke-RestMethod -Uri "$baseUrl/payments" -Method Get
+```
+
+Malformed payments are rejected before recording.
 
 Invalid request shapes return RFC 7807 problem details with the `application/problem+json` content type. Reading validation failures return HTTP `422`; malformed payloads return HTTP `400`.
 
