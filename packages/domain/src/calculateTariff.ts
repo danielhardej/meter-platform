@@ -1,6 +1,10 @@
 import type { Reading, TariffRates } from './types.js';
 
-const defaultRates: TariffRates = { peakCentsPerKwh: 32, offPeakCentsPerKwh: 18 };
+export const defaultRates: TariffRates = {
+  peakCentsPerKwh: 32,
+  offPeakCentsPerKwh: 18,
+  feedInRateCentsPerKwh: 5,
+};
 
 function applyTimeOfUseRates(reading: Pick<Reading, 'kWh' | 'readAt'>, rates: TariffRates): number {
   const hour = new Date(reading.readAt).getUTCHours();

@@ -103,14 +103,14 @@ The response is HTTP `201` with `{ "accepted": 2 }`. The batch is all-or-nothing
 
 ### Request a tariff quote
 
-Send usage, exported energy and a timestamp to `POST /quotes`:
+Send usage, optional export energy and a timestamp to `POST /quotes`:
 
 ```powershell
-$quote = @{ kWh = 2.5; exportedKWh = 1; readAt = "2026-11-02T10:00:00Z" }
+$quote = @{ kWh = 2.5; exportKwh = 1; readAt = "2026-11-02T10:00:00Z" }
 Invoke-RestMethod -Uri "$baseUrl/quotes" -Method Post -ContentType "application/json" -Body ($quote | ConvertTo-Json)
 ```
 
-The response is `{ "currency": "AUD", "amount": 0.8, "feedInCredit": 0.08, "netAmount": 0.72 }` for this example. The illustrative tariff uses UTC peak rates from 07:00 inclusive to 22:00 exclusive; it is not a real retail tariff.
+The response is `{ "currency": "AUD", "amount": 0.8, "feedInCredit": 0.05, "netAmount": 0.75 }` for this example. The feed-in rate is 5 cents per kWh from the plan configuration, and the credit is capped at the usage charge. The illustrative tariff uses UTC peak rates from 07:00 inclusive to 22:00 exclusive; it is not a real retail tariff.
 
 ### Submit a payment
 

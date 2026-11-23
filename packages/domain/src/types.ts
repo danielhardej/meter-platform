@@ -14,11 +14,12 @@ export type ValidationResult =
 export interface TariffRates {
   peakCentsPerKwh: number;
   offPeakCentsPerKwh: number;
+  feedInRateCentsPerKwh?: number;
 }
 
 export interface QuoteInput {
   kWh: number;
-  exportedKWh: number;
+  exportKwh?: number | undefined;
   readAt: string;
 }
 
