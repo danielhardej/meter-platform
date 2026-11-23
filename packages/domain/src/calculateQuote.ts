@@ -16,6 +16,6 @@ export function calculateQuote(input: QuoteInput, rates: TariffRates = defaultRa
   }
 
   const amount = calculateTariff(input, rates);
-  const feedInCredit = Math.min(roundToCents(exportKwh * feedInRate / 100), amount);
+  const feedInCredit = Math.min(roundToCents(exportKwh * feedInRate), amount);
   return { amount, feedInCredit, netAmount: roundToCents(amount - feedInCredit) };
 }
