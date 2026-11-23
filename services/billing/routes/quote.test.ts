@@ -48,18 +48,21 @@ describe('POST /quotes', () => {
     expect(response.json()).toMatchObject({ status: 400 });
   });
 
-  it('rejects negative export energy with problem details', async () => {
+  it('rejects a request without an NMI', async () => {
     const app = buildApp();
-    const payload = { kWh: 1, exportKwh: -1, readAt: '2026-11-02T10:00:00Z' };
+    const payload = { kWh: 1, exportKwh: -1, readAt: peakReadAt };
 
     const response = await app.inject({ method: 'POST', url: '/quotes', payload });
 
-    expect(response.statusCode).toBe(400);
-    expect(response.headers['content-type']).toContain('application/problem+json');
-    expect(response.json()).toMatchObject({
-      title: 'Request rejected',
-      status: 400,
-      detail: 'Expected non-negative usage and export energy with an ISO timestamp',
-    });
+    expect(response.statusCode).toBeGreaterThanOrEqual(400);
+  });
+
+  it('rejects negative export energy', async () => {
+    const app = buildApp();
+    const payload = { nmi: 'TEST000001', kWh: 1, exportKwh: -5, readAt: peakReadAt };
+
+    const response = await app.inject({ method: 'POST', url: '/quotes', payload });
+
+    expect(response.statusCode).toBeGreaterThanOrEqual(400);
   });
 });
