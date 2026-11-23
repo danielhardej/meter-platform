@@ -43,7 +43,7 @@
     "jsdom": "31.0.0",
     "pyright": "1.1.407",
     "typescript": "5.9.3",
-    "typescript-eslint": "8.46.3",
+    "typescript-eslint": "8.73.0",
     "vite": "7.3.7",
     "vitest": "4.0.8"
   }
