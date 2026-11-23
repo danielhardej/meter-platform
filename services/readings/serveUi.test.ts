@@ -21,11 +21,13 @@ describe('registerBuiltUi', () => {
 
     const indexResponse = await app.inject({ method: 'GET', url: '/' });
     const readingsResponse = await app.inject({ method: 'GET', url: '/readings' });
+    const missingResponse = await app.inject({ method: 'GET', url: '/not-a-route' });
 
     expect(indexResponse.statusCode).toBe(200);
     expect(indexResponse.body).toContain('Meter Platform');
-    expect(readingsResponse.statusCode).toBe(404);
-    expect(readingsResponse.headers['content-type']).toContain('application/problem+json');
+    expect(readingsResponse.json()).toEqual({ readings: [] });
+    expect(missingResponse.statusCode).toBe(404);
+    expect(missingResponse.headers['content-type']).toContain('application/problem+json');
   });
 
   it('leaves the API usable when no UI build exists', async () => {
