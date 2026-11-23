@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { ApiError, requestQuote, submitReading } from './api.js';
+import { ApiError, fetchPaymentAttempts, fetchReadings, requestQuote, submitReading } from './api.js';
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -14,6 +14,27 @@ describe('API client', () => {
 
     await expect(requestQuote({ kWh: 2.5, readAt: '2026-11-02T10:00:00Z' }))
       .resolves.toEqual({ currency: 'AUD', amount: 0.8 });
+  });
+
+  it('returns readings from the list endpoint', async () => {
+    const reading = { nmi: 'TEST000001', kWh: 2.5, readAt: '2026-11-02T10:00:00Z', quality: 'A' };
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(
+      JSON.stringify({ readings: [reading] }),
+      { status: 200, headers: { 'content-type': 'application/json' } },
+    )));
+
+    await expect(fetchReadings()).resolves.toEqual([reading]);
+    expect(fetch).toHaveBeenCalledWith('/readings', { method: 'GET' });
+  });
+
+  it('surfaces problem detail from a failed list request', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response(
+      JSON.stringify({ detail: 'Payment attempts are unavailable' }),
+      { status: 503, headers: { 'content-type': 'application/problem+json' } },
+    )));
+
+    await expect(fetchPaymentAttempts())
+      .rejects.toMatchObject({ status: 503, message: 'Payment attempts are unavailable' });
   });
 
   it('surfaces safe problem detail from a rejected request', async () => {
